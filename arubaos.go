@@ -22,31 +22,45 @@ type Client struct {
 	uidAruba string
 }
 
-// AP the properties that exist on AccessPoints
-type AP struct {
+// ArubaAuthResp in login/logout methods
+type ArubaAuthResp struct {
+	GlobalRes struct {
+		Status    string `json:"status"`
+		StatusStr string `json:"status_str"`
+		UIDAruba  string `json:"UIDARUBA"`
+	} `json:"_global_result"`
+}
+
+// MMApDB the response when retrieving APs from a Mobility Master
+type MMApDB struct {
+	AP []MMAp `json:"AP Database"`
+}
+
+// MMAp the properties that exist on APs from the Mobility Master
+type MMAp struct {
+	MacAddr string `json:"apmac"`
+	Name    string `json:"apname"`
+	Group   string `json:"apgroup"`
+	Model   string `json:"model"`
+	Serial  string `json:"serialno"`
+	IPAddr  string `json:"ipaddress"`
+	Status  string `json:"status"`
 }
 
 // APDatabase the response from a show ap database long cmd on a MM/WLC
 type APDatabase struct {
-	AP []struct {
-		Type     string `json:"AP Type"`
-		Group    string `json:"Group"`
-		IPAddrs  string `json:"IP Address"`
-		Name     string `json:"Name"`
-		Serial   string `json:"Serial #"`
-		Status   string `json:"Status"`
-		SwitchIP string `json:"Switch IP"`
-		MACAddr  string `json:"Wired MAC Address"`
-	} `json:"AP Database"`
+	AP []AP `json:"AP Database"`
 }
 
-// RenameAPReq is the object definition needed for MM/WLC
-// To Rename an AP from Default
-type RenameAPReq struct {
-	MacAddr   string `json:"wired-mac"`
-	ApName    string `json:"ap-name"`
-	SerialNum string `json:"serial-num"`
-	NewName   string `json:"new-name"`
+// AP the properties that exist on AccessPoints
+type AP struct {
+	MacAddr string `json:"Wired MAC Address"`
+	Name    string `json:"Name"`
+	Group   string `json:"Group"`
+	Model   string `json:"AP Type"`
+	Serial  string `json:"Serial #"`
+	IPAddr  string `json:"IP Address"`
+	Status  string `json:"Status"`
 }
 
 // APAssoc show user-table
@@ -68,15 +82,6 @@ type APAssoc struct {
 		UserType      string      `json:"User Type"`
 		VPNLink       interface{} `json:"VPN link"`
 	} `json:"Users"`
-}
-
-// ArubaAuthResp in login/logout methods
-type ArubaAuthResp struct {
-	GlobalRes struct {
-		Status    string `json:"status"`
-		StatusStr string `json:"status_str"`
-		UIDAruba  string `json:"UIDARUBA"`
-	} `json:"_global_result"`
 }
 
 // New creates a new reference to the Client struct
@@ -146,33 +151,79 @@ func (c *Client) Logout() (ArubaAuthResp, error) {
 	return authObj, nil
 }
 
-// GetAPDatabase retrieves AccessPoints associated with a WLC
-// show ap database long
-func (c *Client) GetAPDatabase() (APDatabase, error) {
+// GetMMApDB the Mobility Master has a unique API Call
+// to retrieve APs from its Database
+func (c *Client) GetMMApDB() ([]MMAp, error) {
 	err := c.login()
 	if err != nil {
-		return APDatabase{}, fmt.Errorf("%v", err)
+	}
+	endpoint := "/configuration/object/apdatabase"
+	req, _ := http.NewRequest("GET", c.BaseURL+endpoint, nil)
+	// Custom QueryString for Request
+	qs := map[string]string{"config_path": "/md"}
+	// Add Common Values to the REQ
+	c.updateReq(req, qs)
+	res, err := c.http.Do(req)
+	if err != nil {
+		return []MMAp{}, fmt.Errorf("%v", err)
+	}
+	defer res.Body.Close()
+	var apDb MMApDB
+	json.NewDecoder(res.Body).Decode(&apDb)
+	return apDb.AP, nil
+}
+
+// GetApDB retrieves AccessPoints associated with a WLC
+// show ap database long
+func (c *Client) GetApDB() ([]AP, error) {
+	err := c.login()
+	if err != nil {
+		return []AP{}, fmt.Errorf("%v", err)
 	}
 	endpoint := "/configuration/showcommand"
 	req, err := http.NewRequest("GET", c.BaseURL+endpoint, nil)
 	if err != nil {
-		return APDatabase{}, fmt.Errorf("unabled to create a new request: %v", err)
+		return []AP{}, fmt.Errorf("unabled to create a new request: %v", err)
 	}
-	req.AddCookie(c.cookie)
-	q := req.URL.Query()
-	q.Add("command", "show ap database long")
-	q.Add("UIDARUBA", c.uidAruba)
-	req.URL.RawQuery = q.Encode()
+	qs := map[string]string{"command": "show ap database long"}
+	c.updateReq(req, qs)
 	res, err := c.http.Do(req)
 	if err != nil {
-		return APDatabase{}, fmt.Errorf("%v", err)
+		return []AP{}, fmt.Errorf("%v", err)
 	}
 	defer res.Body.Close()
 	var apDatabase APDatabase
 	json.NewDecoder(res.Body).Decode(&apDatabase)
-	return apDatabase, nil
+	return apDatabase.AP, nil
+}
+
+func (c *Client) updateReq(req *http.Request, qs map[string]string) {
+	req.Header.Add("Content-Type", "application/json")
+	req.AddCookie(c.cookie)
+	q := req.URL.Query()
+	for key, val := range qs {
+		q.Add(key, val)
+	}
+	q.Add("UIDARUBA", c.uidAruba)
+	req.URL.RawQuery = q.Encode()
 }
 
 // CreateVAP
-// Rename AP
+// RenameAP
+/*
+	/object/ap_rename
+	{
+		"wired-mac": "a8:bd:27:ce:13:86",
+		"new-name": "ap02.devlab"
+	}
+*/
+// RegroupAP
+/*
+	/object/ap_rename
+	{
+		"wired-mac": "a8:bd:27:ce:13:86",
+		"new-group": "<group-name>"
+	}
+*/
+// Both at the Same Time
 // Get User (show user-table mac <mac-addr>)

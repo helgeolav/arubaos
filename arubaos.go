@@ -84,6 +84,28 @@ type APAssoc struct {
 	} `json:"Users"`
 }
 
+// Intf the Aruba AP Interface Information
+type Intf struct {
+	Duplex    string `json:"Duplex"`
+	MAC       string `json:"MAC"`
+	Oper      string `json:"Oper"`
+	Port      string `json:"Port"`
+	RXBytes   string `json:"RX-Bytes"`
+	RXPackets string `json:"RX-Packets"`
+	Speed     string `json:"Speed"`
+	TXBytes   string `json:"TX-Bytes"`
+	TXPackets string `json:"TX-Packets"`
+}
+
+// APLldp the properties of a Neighbor Connected to the AP
+type APLldp struct {
+	APName         string `json:"AP"`
+	RemoteHostname string `json:"Chassis Name/ID"`
+	RemoteIP       string `json:"Mgmt. Address"`
+	RemoteIntfDesc string `json:"Port Desc"`
+	RemoteIntf     string `json:"Port ID"`
+}
+
 // New creates a new reference to the Client struct
 func New(host, user, pass string, ignoreSSL bool) *Client {
 	return &Client{
@@ -156,6 +178,7 @@ func (c *Client) Logout() (ArubaAuthResp, error) {
 func (c *Client) GetMMApDB() ([]MMAp, error) {
 	err := c.login()
 	if err != nil {
+		return nil, fmt.Errorf("%v", err)
 	}
 	endpoint := "/configuration/object/apdatabase"
 	req, _ := http.NewRequest("GET", c.BaseURL+endpoint, nil)
@@ -208,22 +231,73 @@ func (c *Client) updateReq(req *http.Request, qs map[string]string) {
 	req.URL.RawQuery = q.Encode()
 }
 
-// CreateVAP
-// RenameAP
-/*
-	/object/ap_rename
-	{
-		"wired-mac": "a8:bd:27:ce:13:86",
-		"new-name": "ap02.devlab"
+// GetApPortStatus retrieves Interface statistics from an AP
+func (c *Client) GetApPortStatus(mac string) (Intf, error) {
+	err := c.login()
+	if err != nil {
+		return Intf{}, fmt.Errorf("%v", err)
 	}
-*/
-// RegroupAP
-/*
-	/object/ap_rename
-	{
-		"wired-mac": "a8:bd:27:ce:13:86",
-		"new-group": "<group-name>"
+	endpoint := "/configuration/showcommand"
+	req, err := http.NewRequest("GET", c.BaseURL+endpoint, nil)
+	if err != nil {
+		return Intf{}, fmt.Errorf("%v", err)
 	}
-*/
-// Both at the Same Time
+	cmd := fmt.Sprintf("show ap port status wired-mac %s", mac)
+	qs := map[string]string{"command": cmd}
+	c.updateReq(req, qs)
+	res, err := c.http.Do(req)
+	if err != nil {
+		return Intf{}, fmt.Errorf("%v", err)
+	}
+	defer res.Body.Close()
+	var mintfs map[string][]Intf
+	var intf Intf
+	json.NewDecoder(res.Body).Decode(&mintfs)
+	for k, intfs := range mintfs {
+		if k != "_meta" {
+			for _, ints := range intfs {
+				if ints.Oper == "up" && ints.MAC == mac {
+					intf = ints
+					break
+				}
+			}
+		}
+	}
+	return intf, nil
+}
+
+// GetApLLDPInfo gets LLDP Information of connected AP
+func (c *Client) GetApLLDPInfo(apName string) (APLldp, error) {
+	err := c.login()
+	if err != nil {
+		return APLldp{}, fmt.Errorf("%v", err)
+	}
+	endpoint := "/configuration/showcommand"
+	req, err := http.NewRequest("GET", c.BaseURL+endpoint, nil)
+	if err != nil {
+		return APLldp{}, fmt.Errorf("%v", err)
+	}
+	cmd := fmt.Sprintf("show ap lldp neighbors ap-name %s", apName)
+	qs := map[string]string{"command": cmd}
+	c.updateReq(req, qs)
+	res, err := c.http.Do(req)
+	if err != nil {
+		return APLldp{}, fmt.Errorf("%v", err)
+	}
+	defer res.Body.Close()
+	var mlldp map[string][]APLldp
+	var lldp APLldp
+	json.NewDecoder(res.Body).Decode(&mlldp)
+	for k, lldps := range mlldp {
+		if k == "_data" || k == "_meta" {
+			continue
+		}
+		for _, l := range lldps {
+			lldp = l
+			break
+		}
+	}
+	return lldp, nil
+}
+
 // Get User (show user-table mac <mac-addr>)

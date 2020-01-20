@@ -45,6 +45,7 @@ type MMAp struct {
 	Serial  string `json:"serialno"`
 	IPAddr  string `json:"ipaddress"`
 	Status  string `json:"status"`
+	WLCIp   string `json:"switchip"`
 }
 
 // APDatabase the response from a show ap database long cmd on a MM/WLC

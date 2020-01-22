@@ -85,28 +85,6 @@ type APAssoc struct {
 	} `json:"Users"`
 }
 
-// Intf the Aruba AP Interface Information
-type Intf struct {
-	Duplex    string `json:"Duplex"`
-	MAC       string `json:"MAC"`
-	Oper      string `json:"Oper"`
-	Port      string `json:"Port"`
-	RXBytes   string `json:"RX-Bytes"`
-	RXPackets string `json:"RX-Packets"`
-	Speed     string `json:"Speed"`
-	TXBytes   string `json:"TX-Bytes"`
-	TXPackets string `json:"TX-Packets"`
-}
-
-// APLldp the properties of a Neighbor Connected to the AP
-type APLldp struct {
-	APName         string `json:"AP"`
-	RemoteHostname string `json:"Chassis Name/ID"`
-	RemoteIP       string `json:"Mgmt. Address"`
-	RemoteIntfDesc string `json:"Port Desc"`
-	RemoteIntf     string `json:"Port ID"`
-}
-
 // New creates a new reference to the Client struct
 func New(host, user, pass string, ignoreSSL bool) *Client {
 	return &Client{
@@ -124,7 +102,8 @@ func New(host, user, pass string, ignoreSSL bool) *Client {
 	}
 }
 
-func (c *Client) login() error {
+// Login establishes a session with an Aruba Device
+func (c *Client) Login() error {
 	data := url.Values{}
 	data.Set("username", c.Username)
 	data.Set("password", c.Password)
@@ -177,7 +156,7 @@ func (c *Client) Logout() (ArubaAuthResp, error) {
 // GetMMApDB the Mobility Master has a unique API Call
 // to retrieve APs from its Database
 func (c *Client) GetMMApDB() ([]MMAp, error) {
-	err := c.login()
+	err := c.Login()
 	if err != nil {
 		return nil, fmt.Errorf("%v", err)
 	}
@@ -200,9 +179,8 @@ func (c *Client) GetMMApDB() ([]MMAp, error) {
 // GetApDB retrieves AccessPoints associated with a WLC
 // show ap database long
 func (c *Client) GetApDB() ([]AP, error) {
-	err := c.login()
-	if err != nil {
-		return []AP{}, fmt.Errorf("%v", err)
+	if c.cookie == nil {
+		return nil, fmt.Errorf("you must first login to perform this action")
 	}
 	endpoint := "/configuration/showcommand"
 	req, err := http.NewRequest("GET", c.BaseURL+endpoint, nil)
@@ -232,11 +210,23 @@ func (c *Client) updateReq(req *http.Request, qs map[string]string) {
 	req.URL.RawQuery = q.Encode()
 }
 
+// Intf the Aruba AP Interface Information
+type Intf struct {
+	Duplex    string `json:"Duplex"`
+	MAC       string `json:"MAC"`
+	Oper      string `json:"Oper"`
+	Port      string `json:"Port"`
+	RXBytes   string `json:"RX-Bytes"`
+	RXPackets string `json:"RX-Packets"`
+	Speed     string `json:"Speed"`
+	TXBytes   string `json:"TX-Bytes"`
+	TXPackets string `json:"TX-Packets"`
+}
+
 // GetApPortStatus retrieves Interface statistics from an AP
 func (c *Client) GetApPortStatus(mac string) (Intf, error) {
-	err := c.login()
-	if err != nil {
-		return Intf{}, fmt.Errorf("%v", err)
+	if c.cookie == nil {
+		return Intf{}, fmt.Errorf("you must first login to perform this action")
 	}
 	endpoint := "/configuration/showcommand"
 	req, err := http.NewRequest("GET", c.BaseURL+endpoint, nil)
@@ -267,11 +257,19 @@ func (c *Client) GetApPortStatus(mac string) (Intf, error) {
 	return intf, nil
 }
 
+// APLldp the properties of a Neighbor Connected to the AP
+type APLldp struct {
+	APName         string `json:"AP"`
+	RemoteHostname string `json:"Chassis Name/ID"`
+	RemoteIP       string `json:"Mgmt. Address"`
+	RemoteIntfDesc string `json:"Port Desc"`
+	RemoteIntf     string `json:"Port ID"`
+}
+
 // GetApLLDPInfo gets LLDP Information of connected AP
 func (c *Client) GetApLLDPInfo(apName string) (APLldp, error) {
-	err := c.login()
-	if err != nil {
-		return APLldp{}, fmt.Errorf("%v", err)
+	if c.cookie == nil {
+		return APLldp{}, fmt.Errorf("you must first login to perform this action")
 	}
 	endpoint := "/configuration/showcommand"
 	req, err := http.NewRequest("GET", c.BaseURL+endpoint, nil)

@@ -70,7 +70,7 @@ func (c *Client) ProvAPs(newAPs []ApProv) error {
 	}
 	jdata, _ := json.Marshal(apProv)
 	body := strings.NewReader(string(jdata))
-	err := c.login()
+	err := c.Login()
 	if err != nil {
 		return fmt.Errorf("%v", err)
 	}

@@ -156,9 +156,8 @@ func (c *Client) Logout() (ArubaAuthResp, error) {
 // GetMMApDB the Mobility Master has a unique API Call
 // to retrieve APs from its Database
 func (c *Client) GetMMApDB() ([]MMAp, error) {
-	err := c.Login()
-	if err != nil {
-		return nil, fmt.Errorf("%v", err)
+	if c.cookie == nil {
+		return nil, fmt.Errorf("you must first login to perform this action")
 	}
 	endpoint := "/configuration/object/apdatabase"
 	req, _ := http.NewRequest("GET", c.BaseURL+endpoint, nil)

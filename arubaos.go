@@ -222,7 +222,8 @@ type Intf struct {
 	TXPackets string `json:"TX-Packets"`
 }
 
-// GetApPortStatus retrieves Interface statistics from an AP
+// GetApPortStatus retrieves Interface statistics of an AP
+// This Command Must be run from a Controller *NOT MM
 func (c *Client) GetApPortStatus(mac string) (Intf, error) {
 	if c.cookie == nil {
 		return Intf{}, fmt.Errorf("you must first login to perform this action")
@@ -240,16 +241,23 @@ func (c *Client) GetApPortStatus(mac string) (Intf, error) {
 		return Intf{}, fmt.Errorf("%v", err)
 	}
 	defer res.Body.Close()
-	var mintfs map[string][]Intf
 	var intf Intf
+
+	// This Block of Code map[string][]Slice
+	// Is Used Because the Property/Field of the returned
+	// JSON Object is Dynamic/Non-Deterministic, so IT needs
+	// To Be PARSED and Stripped OFF
+	var mintfs map[string][]Intf
 	json.NewDecoder(res.Body).Decode(&mintfs)
 	for k, intfs := range mintfs {
-		if k != "_meta" {
-			for _, ints := range intfs {
-				if ints.Oper == "up" && ints.MAC == mac {
-					intf = ints
-					break
-				}
+		// Ignore these Fields
+		if k == "_meta" || k == "_data" {
+			continue
+		}
+		for _, ints := range intfs {
+			if ints.Oper == "up" && ints.MAC == mac {
+				intf = ints
+				break
 			}
 		}
 	}
@@ -265,7 +273,8 @@ type APLldp struct {
 	RemoteIntf     string `json:"Port ID"`
 }
 
-// GetApLLDPInfo gets LLDP Information of connected AP
+// GetApLLDPInfo gets LLDP Info of Device Connecting to the AP
+// This Command MUST be run from the Controller *NOT MM
 func (c *Client) GetApLLDPInfo(apName string) (APLldp, error) {
 	if c.cookie == nil {
 		return APLldp{}, fmt.Errorf("you must first login to perform this action")
@@ -283,10 +292,16 @@ func (c *Client) GetApLLDPInfo(apName string) (APLldp, error) {
 		return APLldp{}, fmt.Errorf("%v", err)
 	}
 	defer res.Body.Close()
-	var mlldp map[string][]APLldp
 	var lldp APLldp
+
+	// This Block of Code map[string][]Slice
+	// Is Used Because the Property/Field of the returned
+	// JSON Object is Dynamic/Non-Deterministic, so IT needs
+	// To Be PARSED and Stripped OFF
+	var mlldp map[string][]APLldp
 	json.NewDecoder(res.Body).Decode(&mlldp)
 	for k, lldps := range mlldp {
+		// Ignore These Fields
 		if k == "_data" || k == "_meta" {
 			continue
 		}

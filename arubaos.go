@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -22,7 +23,7 @@ type Client struct {
 	uidAruba string
 }
 
-// New creates a new reference to the Client struct
+// New creates a reference to the Client struct
 func New(host, user, pass string, ignoreSSL bool) *Client {
 	return &Client{
 		BaseURL:  fmt.Sprintf("https://%s:4343/v1", host),
@@ -101,6 +102,11 @@ func (c *Client) Logout() (ArubaAuthResp, error) {
 	return authObj, nil
 }
 
+// AFilter URI Params for Get Reqs
+type AFilter struct {
+	Count int
+}
+
 // MMApDB the response when retrieving APs from a Mobility Master
 type MMApDB struct {
 	AP []MMAp `json:"AP Database"`
@@ -120,7 +126,7 @@ type MMAp struct {
 
 // GetMMApDB the Mobility Master has a unique API Call
 // to retrieve APs from its Database
-func (c *Client) GetMMApDB() ([]MMAp, error) {
+func (c *Client) GetMMApDB(f AFilter) ([]MMAp, error) {
 	if c.cookie == nil {
 		return nil, fmt.Errorf("you must first login to perform this action")
 	}
@@ -128,6 +134,9 @@ func (c *Client) GetMMApDB() ([]MMAp, error) {
 	req, _ := http.NewRequest("GET", c.BaseURL+endpoint, nil)
 	// Custom QueryString for Request
 	qs := map[string]string{"config_path": "/md"}
+	if f.Count != 0 {
+		qs["count"] = strconv.Itoa(f.Count)
+	}
 	// Add Common Values to the REQ
 	c.updateReq(req, qs)
 	res, err := c.http.Do(req)

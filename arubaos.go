@@ -22,69 +22,6 @@ type Client struct {
 	uidAruba string
 }
 
-// ArubaAuthResp in login/logout methods
-type ArubaAuthResp struct {
-	GlobalRes struct {
-		Status    string `json:"status"`
-		StatusStr string `json:"status_str"`
-		UIDAruba  string `json:"UIDARUBA"`
-	} `json:"_global_result"`
-}
-
-// MMApDB the response when retrieving APs from a Mobility Master
-type MMApDB struct {
-	AP []MMAp `json:"AP Database"`
-}
-
-// MMAp the properties that exist on APs from the Mobility Master
-type MMAp struct {
-	MacAddr string `json:"apmac"`
-	Name    string `json:"apname"`
-	Group   string `json:"apgroup"`
-	Model   string `json:"model"`
-	Serial  string `json:"serialno"`
-	IPAddr  string `json:"ipaddress"`
-	Status  string `json:"status"`
-	WLCIp   string `json:"switchip"`
-}
-
-// APDatabase the response from a show ap database long cmd on a MM/WLC
-type APDatabase struct {
-	AP []AP `json:"AP Database"`
-}
-
-// AP the properties that exist on AccessPoints
-type AP struct {
-	MacAddr string `json:"Wired MAC Address"`
-	Name    string `json:"Name"`
-	Group   string `json:"Group"`
-	Model   string `json:"AP Type"`
-	Serial  string `json:"Serial #"`
-	IPAddr  string `json:"IP Address"`
-	Status  string `json:"Status"`
-}
-
-// APAssoc show user-table
-type APAssoc struct {
-	Users []struct {
-		APName        string      `json:"AP name"`
-		AgeDHM        string      `json:"Age(d:h:m)"`
-		Auth          interface{} `json:"Auth"`
-		EssidBssidPhy string      `json:"Essid/Bssid/Phy"`
-		ForwardMode   string      `json:"Forward mode"`
-		HostName      interface{} `json:"Host Name"`
-		IP            string      `json:"IP"`
-		MAC           string      `json:"MAC"`
-		Name          interface{} `json:"Name"`
-		Profile       string      `json:"Profile"`
-		Roaming       string      `json:"Roaming"`
-		Role          string      `json:"Role"`
-		Type          string      `json:"Type"`
-		UserType      string      `json:"User Type"`
-		VPNLink       interface{} `json:"VPN link"`
-	} `json:"Users"`
-}
-
 // New creates a new reference to the Client struct
 func New(host, user, pass string, ignoreSSL bool) *Client {
 	return &Client{
@@ -100,6 +37,15 @@ func New(host, user, pass string, ignoreSSL bool) *Client {
 			Timeout: 8 * time.Second,
 		},
 	}
+}
+
+// ArubaAuthResp in login/logout methods
+type ArubaAuthResp struct {
+	GlobalRes struct {
+		Status    string `json:"status"`
+		StatusStr string `json:"status_str"`
+		UIDAruba  string `json:"UIDARUBA"`
+	} `json:"_global_result"`
 }
 
 // Login establishes a session with an Aruba Device
@@ -148,9 +94,28 @@ func (c *Client) Logout() (ArubaAuthResp, error) {
 	var authObj ArubaAuthResp
 	json.NewDecoder(res.Body).Decode(&authObj)
 	if authObj.GlobalRes.StatusStr == "You've been logged out successfully" {
+		c.cookie = nil
+		c.uidAruba = ""
 		return authObj, nil
 	}
 	return authObj, nil
+}
+
+// MMApDB the response when retrieving APs from a Mobility Master
+type MMApDB struct {
+	AP []MMAp `json:"AP Database"`
+}
+
+// MMAp the properties that exist on APs from the Mobility Master
+type MMAp struct {
+	MacAddr string `json:"apmac"`
+	Name    string `json:"apname"`
+	Group   string `json:"apgroup"`
+	Model   string `json:"model"`
+	Serial  string `json:"serialno"`
+	IPAddr  string `json:"ipaddress"`
+	Status  string `json:"status"`
+	WLCIp   string `json:"switchip"`
 }
 
 // GetMMApDB the Mobility Master has a unique API Call
@@ -173,6 +138,22 @@ func (c *Client) GetMMApDB() ([]MMAp, error) {
 	var apDb MMApDB
 	json.NewDecoder(res.Body).Decode(&apDb)
 	return apDb.AP, nil
+}
+
+// APDatabase the response from a show ap database long cmd on a MM/WLC
+type APDatabase struct {
+	AP []AP `json:"AP Database"`
+}
+
+// AP the properties that exist on AccessPoints
+type AP struct {
+	MacAddr string `json:"Wired MAC Address"`
+	Name    string `json:"Name"`
+	Group   string `json:"Group"`
+	Model   string `json:"AP Type"`
+	Serial  string `json:"Serial #"`
+	IPAddr  string `json:"IP Address"`
+	Status  string `json:"Status"`
 }
 
 // GetApDB retrieves AccessPoints associated with a WLC
@@ -311,6 +292,27 @@ func (c *Client) GetApLLDPInfo(apName string) (APLldp, error) {
 		}
 	}
 	return lldp, nil
+}
+
+// APAssoc show user-table
+type APAssoc struct {
+	Users []struct {
+		APName        string      `json:"AP name"`
+		AgeDHM        string      `json:"Age(d:h:m)"`
+		Auth          interface{} `json:"Auth"`
+		EssidBssidPhy string      `json:"Essid/Bssid/Phy"`
+		ForwardMode   string      `json:"Forward mode"`
+		HostName      interface{} `json:"Host Name"`
+		IP            string      `json:"IP"`
+		MAC           string      `json:"MAC"`
+		Name          interface{} `json:"Name"`
+		Profile       string      `json:"Profile"`
+		Roaming       string      `json:"Roaming"`
+		Role          string      `json:"Role"`
+		Type          string      `json:"Type"`
+		UserType      string      `json:"User Type"`
+		VPNLink       interface{} `json:"VPN link"`
+	} `json:"Users"`
 }
 
 // Get User (show user-table mac <mac-addr>)

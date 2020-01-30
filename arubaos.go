@@ -17,6 +17,7 @@ type Client struct {
 	BaseURL  string
 	Username string
 	Password string
+	IP       string
 
 	http     *http.Client
 	cookie   *http.Cookie
@@ -29,6 +30,7 @@ func New(host, user, pass string, ignoreSSL bool) *Client {
 		BaseURL:  fmt.Sprintf("https://%s:4343/v1", host),
 		Username: user,
 		Password: pass,
+		IP:       host,
 		http: &http.Client{
 			Transport: &http.Transport{
 				TLSClientConfig: &tls.Config{
@@ -245,7 +247,7 @@ func (c *Client) GetApPortStatus(mac string) (Intf, error) {
 			continue
 		}
 		for _, ints := range intfs {
-			if ints.Oper == "up" && ints.MAC == mac {
+			if ints.Oper == "up" {
 				intf = ints
 				break
 			}

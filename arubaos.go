@@ -158,13 +158,15 @@ type APDatabase struct {
 
 // AP the properties that exist on AccessPoints
 type AP struct {
-	MacAddr string `json:"Wired MAC Address"`
-	Name    string `json:"Name"`
-	Group   string `json:"Group"`
-	Model   string `json:"AP Type"`
-	Serial  string `json:"Serial #"`
-	IPAddr  string `json:"IP Address"`
-	Status  string `json:"Status"`
+	MacAddr      string `json:"Wired MAC Address"`
+	Name         string `json:"Name"`
+	Group        string `json:"Group"`
+	Model        string `json:"AP Type"`
+	Serial       string `json:"Serial #"`
+	IPAddr       string `json:"IP Address"`
+	Status       string `json:"Status"`
+	PrimaryWlc   string `json:"Switch IP"`
+	SecondaryWlc string `json:"Standby IP"`
 }
 
 // GetApDB retrieves AccessPoints associated with a WLC

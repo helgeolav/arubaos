@@ -52,6 +52,9 @@ type ApProv struct {
 // ProvAPs provisions the AP Name and AP Group
 // This can only be performed using the MM
 func (c *Client) ProvAPs(newAPs []ApProv) error {
+	if c.cookie == nil {
+		return fmt.Errorf(loginWarning)
+	}
 	var apConf []APConfList
 	for _, newAP := range newAPs {
 		apConf = append(apConf, APConfList{
@@ -65,15 +68,11 @@ func (c *Client) ProvAPs(newAPs []ApProv) error {
 			},
 		})
 	}
-	apProv := APProvision{
-		APConfList: apConf,
-	}
+	apProv := APProvision{APConfList: apConf}
+
 	jdata, _ := json.Marshal(apProv)
 	body := strings.NewReader(string(jdata))
-	err := c.Login()
-	if err != nil {
-		return fmt.Errorf("%v", err)
-	}
+
 	endpoint := "/configuration/object"
 	req, err := http.NewRequest("POST", c.BaseURL+endpoint, body)
 

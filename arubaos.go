@@ -11,6 +11,8 @@ import (
 	"time"
 )
 
+const loginWarning string = "you must first login to perform this action"
+
 // Client struct used for the Connection
 // To an Aruba MM and/or Controller
 type Client struct {
@@ -83,9 +85,9 @@ func (c *Client) Login() error {
 
 // Logout of the Controller
 func (c *Client) Logout() (ArubaAuthResp, error) {
-	req, err := http.NewRequest("GET", c.BaseURL+"/api/logout", nil)
+	req, err := c.genGetReq("/api/logout")
 	if err != nil {
-		return ArubaAuthResp{}, fmt.Errorf("failed to create a new request: %v", err)
+		return ArubaAuthResp{}, err
 	}
 	req.AddCookie(c.cookie)
 	res, err := c.http.Do(req)
@@ -102,6 +104,14 @@ func (c *Client) Logout() (ArubaAuthResp, error) {
 		return authObj, nil
 	}
 	return authObj, nil
+}
+
+func (c *Client) genGetReq(url string) (*http.Request, error) {
+	req, err := http.NewRequest("GET", c.BaseURL+url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %v", err)
+	}
+	return req, nil
 }
 
 // AFilter URI Params for Get Reqs
@@ -130,10 +140,12 @@ type MMAp struct {
 // to retrieve APs from its Database
 func (c *Client) GetMMApDB(f AFilter) ([]MMAp, error) {
 	if c.cookie == nil {
-		return nil, fmt.Errorf("you must first login to perform this action")
+		return nil, fmt.Errorf(loginWarning)
 	}
-	endpoint := "/configuration/object/apdatabase"
-	req, _ := http.NewRequest("GET", c.BaseURL+endpoint, nil)
+	req, err := c.genGetReq("/configuration/object/apdatabase")
+	if err != nil {
+		return nil, err
+	}
 	// Custom QueryString for Request
 	qs := map[string]string{"config_path": "/md"}
 	if f.Count != 0 {
@@ -173,12 +185,11 @@ type AP struct {
 // show ap database long
 func (c *Client) GetApDB() ([]AP, error) {
 	if c.cookie == nil {
-		return nil, fmt.Errorf("you must first login to perform this action")
+		return nil, fmt.Errorf(loginWarning)
 	}
-	endpoint := "/configuration/showcommand"
-	req, err := http.NewRequest("GET", c.BaseURL+endpoint, nil)
+	req, err := c.genGetReq("/configuration/showcommand")
 	if err != nil {
-		return []AP{}, fmt.Errorf("unabled to create a new request: %v", err)
+		return []AP{}, err
 	}
 	qs := map[string]string{"command": "show ap database long"}
 	c.updateReq(req, qs)
@@ -220,7 +231,7 @@ type Intf struct {
 // This Command Must be run from a Controller *NOT MM
 func (c *Client) GetApPortStatus(mac string) (Intf, error) {
 	if c.cookie == nil {
-		return Intf{}, fmt.Errorf("you must first login to perform this action")
+		return Intf{}, fmt.Errorf(loginWarning)
 	}
 	endpoint := "/configuration/showcommand"
 	req, err := http.NewRequest("GET", c.BaseURL+endpoint, nil)
@@ -271,7 +282,7 @@ type APLldp struct {
 // This Command MUST be run from the Controller *NOT MM
 func (c *Client) GetApLLDPInfo(apName string) (APLldp, error) {
 	if c.cookie == nil {
-		return APLldp{}, fmt.Errorf("you must first login to perform this action")
+		return APLldp{}, fmt.Errorf(loginWarning)
 	}
 	endpoint := "/configuration/showcommand"
 	req, err := http.NewRequest("GET", c.BaseURL+endpoint, nil)

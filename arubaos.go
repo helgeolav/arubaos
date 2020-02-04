@@ -233,8 +233,7 @@ func (c *Client) GetApPortStatus(mac string) (Intf, error) {
 	if c.cookie == nil {
 		return Intf{}, fmt.Errorf(loginWarning)
 	}
-	endpoint := "/configuration/showcommand"
-	req, err := http.NewRequest("GET", c.BaseURL+endpoint, nil)
+	req, err := c.genGetReq("/configuration/showcommand")
 	if err != nil {
 		return Intf{}, fmt.Errorf("%v", err)
 	}
@@ -284,8 +283,7 @@ func (c *Client) GetApLLDPInfo(apName string) (APLldp, error) {
 	if c.cookie == nil {
 		return APLldp{}, fmt.Errorf(loginWarning)
 	}
-	endpoint := "/configuration/showcommand"
-	req, err := http.NewRequest("GET", c.BaseURL+endpoint, nil)
+	req, err := c.genGetReq("/configuration/showcommand")
 	if err != nil {
 		return APLldp{}, fmt.Errorf("%v", err)
 	}

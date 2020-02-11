@@ -42,11 +42,13 @@ func (c *Client) GetMMApDB(f AFilter) ([]MMAp, error) {
 	c.updateReq(req, qs)
 	res, err := c.http.Do(req)
 	if err != nil {
-		return []MMAp{}, fmt.Errorf("%v", err)
+		return nil, fmt.Errorf("%v", err)
 	}
 	defer res.Body.Close()
 	var apDb MMApDB
-	json.NewDecoder(res.Body).Decode(&apDb)
+	if err = json.NewDecoder(res.Body).Decode(&apDb); err != nil {
+		return nil, fmt.Errorf("error parsing resp body: %v", err)
+	}
 	return apDb.AP, nil
 }
 
@@ -76,16 +78,18 @@ func (c *Client) GetApDB() ([]AP, error) {
 	}
 	req, err := c.genGetReq("/configuration/showcommand")
 	if err != nil {
-		return []AP{}, err
+		return nil, err
 	}
 	qs := map[string]string{"command": "show ap database long"}
 	c.updateReq(req, qs)
 	res, err := c.http.Do(req)
 	if err != nil {
-		return []AP{}, fmt.Errorf("%v", err)
+		return nil, fmt.Errorf("%v", err)
 	}
 	defer res.Body.Close()
 	var apDatabase APDatabase
-	json.NewDecoder(res.Body).Decode(&apDatabase)
+	if err = json.NewDecoder(res.Body).Decode(&apDatabase); err != nil {
+		return nil, fmt.Errorf("error parsing resp body: %v", err)
+	}
 	return apDatabase.AP, nil
 }

@@ -43,7 +43,9 @@ func (c *Client) GetApPortStatus(mac string) (Intf, error) {
 	// JSON Object is Dynamic/Non-Deterministic, so IT needs
 	// To Be PARSED and Stripped OFF
 	var mintfs map[string][]Intf
-	json.NewDecoder(res.Body).Decode(&mintfs)
+	if err = json.NewDecoder(res.Body).Decode(&mintfs); err != nil {
+		return Intf{}, fmt.Errorf("error parsing resp body: %v", err)
+	}
 	for k, intfs := range mintfs {
 		// Ignore these Fields
 		if k == "_meta" || k == "_data" {
@@ -93,7 +95,9 @@ func (c *Client) GetApLLDPInfo(apName string) (APLldp, error) {
 	// JSON Object is Dynamic/Non-Deterministic, so IT needs
 	// To Be PARSED and Stripped OFF
 	var mlldp map[string][]APLldp
-	json.NewDecoder(res.Body).Decode(&mlldp)
+	if err = json.NewDecoder(res.Body).Decode(&mlldp); err != nil {
+		return APLldp{}, fmt.Errorf("error parsing resp body: %v", err)
+	}
 	for k, lldps := range mlldp {
 		// Ignore These Fields
 		if k == "_data" || k == "_meta" {

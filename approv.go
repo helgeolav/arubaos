@@ -8,31 +8,6 @@ import (
 	"strings"
 )
 
-// APRenameReq is the object definition needed for MM
-// To Rename an AP from Default
-type APRenameReq struct {
-	MacAddr string `json:"wired-mac"`
-	Name    string `json:"new-name"`
-}
-
-// APRegroupReq is the object definition needed for MM
-// To Reassign an AP to appropriate Group
-type APRegroupReq struct {
-	MacAddr string `json:"wired-mac"`
-	Group   string `json:"new-group"`
-}
-
-// APConfList used to Modify Multiple Objects at the same time
-type APConfList struct {
-	APRename  APRenameReq  `json:"ap_rename"`
-	APRegroup APRegroupReq `json:"ap_regroup"`
-}
-
-// APProvision configures both APName and APGroup
-type APProvision struct {
-	APConfList []APConfList `json:"_list"`
-}
-
 // ApProv the Type Needed to by the ProvAPs Method
 type ApProv struct {
 	MacAddr string
@@ -55,20 +30,36 @@ func (c *Client) ProvAPs(newAPs []ApProv) error {
 	if c.cookie == nil {
 		return fmt.Errorf(loginWarning)
 	}
-	var apConf []APConfList
+	type apRenameReq struct {
+		MacAddr string `json:"wired-mac"`
+		Name    string `json:"new-name"`
+	}
+	type apRegroupReq struct {
+		MacAddr string `json:"wired-mac"`
+		Group   string `json:"new-group"`
+	}
+	type apConfList struct {
+		APRename  apRenameReq  `json:"ap_rename"`
+		APRegroup apRegroupReq `json:"ap_regroup"`
+	}
+	type apProvision struct {
+		APConfList []apConfList `json:"_list"`
+	}
+
+	var apConf []apConfList
 	for _, newAP := range newAPs {
-		apConf = append(apConf, APConfList{
-			APRename: APRenameReq{
+		apConf = append(apConf, apConfList{
+			APRename: apRenameReq{
 				MacAddr: newAP.MacAddr,
 				Name:    newAP.Name,
 			},
-			APRegroup: APRegroupReq{
+			APRegroup: apRegroupReq{
 				MacAddr: newAP.MacAddr,
 				Group:   newAP.Group,
 			},
 		})
 	}
-	apProv := APProvision{APConfList: apConf}
+	apProv := apProvision{APConfList: apConf}
 
 	jdata, _ := json.Marshal(apProv)
 	body := strings.NewReader(string(jdata))

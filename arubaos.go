@@ -57,8 +57,8 @@ func (c *Client) Login() error {
 	data := url.Values{}
 	data.Set("username", c.Username)
 	data.Set("password", c.Password)
-	creds := strings.NewReader(data.Encode())
-	req, err := http.NewRequest("POST", c.BaseURL+"/api/login", creds)
+	body := strings.NewReader(data.Encode())
+	req, err := http.NewRequest("POST", c.BaseURL+"/api/login", body)
 	if err != nil {
 		return fmt.Errorf("failed to create a new request: %v", err)
 	}

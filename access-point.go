@@ -3,6 +3,9 @@ package arubaos
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"strings"
 )
 
 // Intf the Aruba AP Interface Information
@@ -111,6 +114,31 @@ func (c *Client) GetApLLDPInfo(apName string) (APLldp, error) {
 	return lldp, nil
 }
 
+// RebootAp ...
+func (c *Client) RebootAp(mac string) error {
+	if c.cookie == nil {
+		return fmt.Errorf(loginWarning)
+	}
+	apBoot := map[string]string{"wired-mac": mac}
+
+	j, _ := json.Marshal(apBoot)
+	body := strings.NewReader(string(j))
+	endpoint := "/configuration/object/apboot"
+	req, err := http.NewRequest("POST", c.BaseURL+endpoint, body)
+	if err != nil {
+		return fmt.Errorf("unabled to create request: %v", err)
+	}
+	c.updateReq(req, map[string]string{})
+	res, err := c.http.Do(req)
+	if err != nil {
+		return fmt.Errorf("request failed: %v", err)
+	}
+	defer res.Body.Close()
+	result, err := ioutil.ReadAll(res.Body)
+	fmt.Println(string(result))
+	return nil
+}
+
 // APAssoc show user-table
 type APAssoc struct {
 	Users []struct {
@@ -133,3 +161,21 @@ type APAssoc struct {
 }
 
 // Get User (show user-table mac <mac-addr>)
+
+// LED actions that can be taken on AP LEDs
+var LED = map[string][]string{
+	"actions": []string{
+		"blink", "normal", "fault-disable", "fault-enable",
+	},
+}
+
+// ApLedActionReq ...
+type ApLedActionReq struct {
+	MacAddr     string `json:"wired-mac"`
+	ApName      string `json:"ap-name"`
+	IPAddr      string `json:"ip-addr"`
+	All         bool   `json:"all"`
+	ApGroup     string `json:"ap-group"`
+	LocalGlobal string `json:"local_global"`
+	Action      string `json:"action_option"`
+}

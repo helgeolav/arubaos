@@ -15,9 +15,10 @@ type WdbCpSec struct {
 	State bool `json:"state,omitempty"`
 	// optional use only for Modify
 	// approved-ready-for-cert
+	// certified-factory-cert
 	Act string `json:"act,omitempty"`
 	// optional use only for Modify
-	Revoke string `json:"revoke-text,omitempty"`
+	RevokeTxt string `json:"revoke-text,omitempty"`
 	// optional
 	Description string `json:"description,omitempty"`
 	// optional use only for Modify
@@ -25,12 +26,13 @@ type WdbCpSec struct {
 	Cert bool `json:"cert-type,omitempty"`
 	// optional use only for Modify
 	// factory-cert
+	// switch-cert
 	CertType string `json:"certtype,omitempty"`
 	// optional use only for Modify
 	// true
 	Mode bool `json:"mode,omitempty"`
 	// optional use only for Modify
-	// enable
+	// enable|disable
 	ModeAct string `json:"modeact,omitempty"`
 	// Do not use for DEL
 	ApName string `json:"ap_name,omitempty"`
@@ -75,7 +77,43 @@ func (c *Client) CpSecAdd(aps []WdbCpSec) error {
 }
 
 // CpSecModify update APs in Whitelist
-func (c *Client) CpSecModify() {}
+func (c *Client) CpSecModify(aps []WdbCpSec) error {
+	if c.cookie == nil {
+		return fmt.Errorf(loginWarning)
+	}
+	type modWl struct {
+		CpSecMod WdbCpSec `json:"wdb_cpsec_modify_mac"`
+	}
+	var modAp []modWl
+	for _, ap := range aps {
+		ap.Act = "approved-ready-for-cert"
+		ap.Cert = true
+		ap.CertType = "factory-cert"
+		ap.Mode = true
+		ap.ModeAct = "enable"
+		modAp = append(modAp, modWl{CpSecMod: ap})
+	}
+	type apModWl struct {
+		ApConfList []modWl `json:"_list"`
+	}
+	apModWhitelist := apModWl{ApConfList: modAp}
+	j, _ := json.Marshal(apModWhitelist)
+	body := strings.NewReader(string(j))
+	endpoint := "/configuration/object"
+	req, err := http.NewRequest("POST", c.BaseURL+endpoint, body)
+	if err != nil {
+		return fmt.Errorf("failed to create request: %v", err)
+	}
+	c.updateReq(req, map[string]string{})
+	res, err := c.http.Do(req)
+	if err != nil {
+		return fmt.Errorf("request failed: %v", err)
+	}
+	defer res.Body.Close()
+	result, err := ioutil.ReadAll(res.Body)
+	fmt.Println(string(result))
+	return nil
+}
 
 /*
 {
@@ -118,3 +156,6 @@ func (c *Client) CpSecDel(aps []WdbCpSec) error {
 	fmt.Println(string(result))
 	return nil
 }
+
+// ClrGapAp deletes APs from LMS(Controller) Database
+func (c *Client) ClrGapAp() {}

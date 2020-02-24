@@ -33,8 +33,11 @@ func (c *Client) GetMMApDB(f AFilter) ([]MMAp, error) {
 	if err != nil {
 		return nil, err
 	}
+	if f.CfgPath == "" {
+		f.CfgPath = "/md"
+	}
 	// Custom QueryString for Request
-	qs := map[string]string{"config_path": "/md"}
+	qs := map[string]string{"config_path": f.CfgPath}
 	if f.Count != 0 {
 		qs["count"] = strconv.Itoa(f.Count)
 	}

@@ -115,7 +115,8 @@ func (c *Client) genGetReq(url string) (*http.Request, error) {
 
 // AFilter URI Params for Get Reqs
 type AFilter struct {
-	Count int
+	Count   int
+	CfgPath string
 }
 
 func (c *Client) updateReq(req *http.Request, qs map[string]string) {

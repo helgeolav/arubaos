@@ -86,7 +86,7 @@ func (c *Client) CpSecModify(aps []WdbCpSec) error {
 	}
 	var modAp []modWl
 	for _, ap := range aps {
-		ap.Act = "approved-ready-for-cert"
+		ap.Act = "certified-factory-cert"
 		ap.Cert = true
 		ap.CertType = "factory-cert"
 		ap.Mode = true

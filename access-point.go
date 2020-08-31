@@ -115,11 +115,17 @@ func (c *Client) GetApLLDPInfo(apName string) (APLldp, error) {
 }
 
 // RebootAp ...
-func (c *Client) RebootAp(mac string) error {
+func (c *Client) RebootAp(ap AP) error {
 	if c.cookie == nil {
 		return fmt.Errorf(loginWarning)
 	}
-	apBoot := map[string]string{"wired-mac": mac}
+	var apBoot map[string]string
+	switch {
+	case ap.Name != "":
+		apBoot = map[string]string{"ap-name": ap.Name}
+	case ap.MacAddr != "":
+		apBoot = map[string]string{"wired-mac": ap.MacAddr}
+	}
 
 	j, _ := json.Marshal(apBoot)
 	body := strings.NewReader(string(j))
@@ -163,11 +169,11 @@ type APAssoc struct {
 // Get User (show user-table mac <mac-addr>)
 
 // LED actions that can be taken on AP LEDs
-var LED = map[string][]string{
-	"actions": []string{
-		"blink", "normal", "fault-disable", "fault-enable",
-	},
-}
+// var LED = map[string][]string{
+// 	"actions": []string{
+// 		"blink", "normal", "fault-disable", "fault-enable",
+// 	},
+// }
 
 // ApLedActionReq ...
 type ApLedActionReq struct {

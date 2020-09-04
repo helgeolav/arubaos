@@ -1,3 +1,3 @@
-module github.com/drkchiloll/go-arubaos
+module github.com/drkchiloll/arubaos
 
 go 1.13

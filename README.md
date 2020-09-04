@@ -5,7 +5,7 @@
 Install via **go get**:
 
 ```shell
-go get -u github.com/drkchiloll/arubaos
+go get -u github.com/ApogeeNetworking/arubaos
 ```
 
 ## Usage
@@ -19,7 +19,7 @@ import (
     "fmt"
     "log"
     
-    "github.com/drkchiloll/arubaos"
+    "github.com/ApogeeNetworking/arubaos"
 )
 
 func main() {

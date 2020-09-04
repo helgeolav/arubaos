@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/drkchiloll/go-arubaos"
+	"github.com/ApogeeNetworking/arubaos"
 )
 
 func main() {
@@ -15,8 +15,8 @@ func main() {
 		true,
 	)
 
-	var aps arubaos.APDatabase
-	aps, err := wlclient.GetAPDatabase()
+	var aps []arubaos.AP
+	aps, err := wlclient.GetApDB()
 	if err != nil {
 		log.Fatalf("%v", err)
 	}

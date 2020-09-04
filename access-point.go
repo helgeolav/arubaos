@@ -3,7 +3,6 @@ package arubaos
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"strings"
 )
@@ -115,9 +114,9 @@ func (c *Client) GetApLLDPInfo(apName string) (APLldp, error) {
 }
 
 // RebootAp ...
-func (c *Client) RebootAp(ap AP) error {
+func (c *Client) RebootAp(ap AP) (string, error) {
 	if c.cookie == nil {
-		return fmt.Errorf(loginWarning)
+		return "", fmt.Errorf(loginWarning)
 	}
 	var apBoot map[string]string
 	switch {
@@ -132,17 +131,23 @@ func (c *Client) RebootAp(ap AP) error {
 	endpoint := "/configuration/object/apboot"
 	req, err := http.NewRequest("POST", c.BaseURL+endpoint, body)
 	if err != nil {
-		return fmt.Errorf("unabled to create request: %v", err)
+		return "", fmt.Errorf("unabled to create request: %v", err)
 	}
 	c.updateReq(req, map[string]string{})
 	res, err := c.http.Do(req)
 	if err != nil {
-		return fmt.Errorf("request failed: %v", err)
+		return "", fmt.Errorf("request failed: %v", err)
 	}
 	defer res.Body.Close()
-	result, err := ioutil.ReadAll(res.Body)
-	fmt.Println(string(result))
-	return nil
+	type RebootResult struct {
+		Result struct {
+			Status    int    `json:"status"`
+			StatusStr string `json:"status_str"`
+		} `json:"_global_result"`
+	}
+	var apReboot RebootResult
+	json.NewDecoder(res.Body).Decode(&apReboot)
+	return strings.ToLower(apReboot.Result.StatusStr), nil
 }
 
 // APAssoc show user-table
@@ -184,4 +189,104 @@ type ApLedActionReq struct {
 	ApGroup     string `json:"ap-group"`
 	LocalGlobal string `json:"local_global"`
 	Action      string `json:"action_option"`
+}
+
+/*
+{
+  "Association Table": [
+    {
+      "Band steer moves (T/S)": "0/0",
+      "Flags": "WVAB",
+      "Name": "ap01.bsc.norton.cafb.al",
+      "aid": "2",
+      "assoc": "y",
+      "assoc. time": "19m:0s",
+      "auth": "y",
+      "bssid": "a8:bd:27:5e:a8:12",
+      "essid": "MyResNet-5G",
+      "l-int": "20",
+      "mac": "88:a4:79:cd:30:47",
+      "num assoc": "1",
+      "phy": "a-VHT-40sgi-2ss",
+      "phy_cap": "a-HE-80-2ss-V",
+      "tunnel-id": "0x10a35",
+      "vlan-id": "1180"
+	},
+*/
+
+// GetAp ...
+func (c *Client) GetAp(apName string) (AP, error) {
+	ap := AP{Name: apName}
+	if c.cookie == nil {
+		return ap, fmt.Errorf(loginWarning)
+	}
+	req, err := c.genGetReq("/configuration/showcommand")
+	if err != nil {
+		return ap, fmt.Errorf(loginWarning)
+	}
+	cmd := fmt.Sprintf("show ap details ap-name %s", apName)
+	qs := map[string]string{"command": cmd}
+	c.updateReq(req, qs)
+	res, err := c.http.Do(req)
+	if err != nil {
+		return ap, fmt.Errorf(loginWarning)
+	}
+	defer res.Body.Close()
+	type resData struct {
+		Item  string `json:"Item"`
+		Value string `json:"Value"`
+	}
+	type resResult map[string][]resData
+	basicKey := fmt.Sprintf("AP %s Basic Information", apName)
+	hwKey := fmt.Sprintf("AP %s Hardware Information", apName)
+	var result resResult
+	json.NewDecoder(res.Body).Decode(&result)
+	for _, val := range result[basicKey] {
+		switch {
+		case val.Item == "LMS IP Address":
+			ap.PrimaryWlc = val.Value
+		case val.Item == "AP IP Address":
+			ap.IPAddr = val.Value
+		case val.Item == "Group":
+			ap.Group = val.Value
+		}
+	}
+	for _, val := range result[hwKey] {
+		switch {
+		case val.Item == "AP Type":
+			ap.Model = val.Value
+		case val.Item == "Wired MAC Address":
+			ap.MacAddr = val.Value
+		case val.Item == "Serial #":
+			ap.Serial = val.Value
+		}
+	}
+	return ap, nil
+}
+
+// GetApAssocCount returns the number of Clients Registered with a Specific AP
+// Can only be run on the Controller the AP is Registered with
+func (c *Client) GetApAssocCount(apName string) (int, error) {
+	if c.cookie == nil {
+		return 0, fmt.Errorf(loginWarning)
+	}
+	req, err := c.genGetReq("/configuration/showcommand")
+	if err != nil {
+		return 0, fmt.Errorf(loginWarning)
+	}
+	cmd := fmt.Sprintf("show ap association ap-name %s", apName)
+	qs := map[string]string{"command": cmd}
+	c.updateReq(req, qs)
+	res, err := c.http.Do(req)
+	if err != nil {
+		return 0, fmt.Errorf(loginWarning)
+	}
+	defer res.Body.Close()
+	type ApAssoc struct {
+		VlanID string `json:"vlan-id"`
+	}
+	type resResult map[string][]ApAssoc
+	var result resResult
+	json.NewDecoder(res.Body).Decode(&result)
+	return len(result["Association Table"]), nil
 }

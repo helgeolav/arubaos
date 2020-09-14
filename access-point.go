@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"reflect"
 	"strings"
 )
 
@@ -44,7 +45,7 @@ func (c *Client) GetApPortStatus(mac string) (Intf, error) {
 	// Is Used Because the Property/Field of the returned
 	// JSON Object is Dynamic/Non-Deterministic, so IT needs
 	// To Be PARSED and Stripped OFF
-	var mintfs map[string][]Intf
+	var mintfs map[string][]interface{}
 	if err = json.NewDecoder(res.Body).Decode(&mintfs); err != nil {
 		return Intf{}, fmt.Errorf("error parsing resp body: %v", err)
 	}
@@ -53,9 +54,36 @@ func (c *Client) GetApPortStatus(mac string) (Intf, error) {
 		if k == "_meta" || k == "_data" {
 			continue
 		}
-		for _, ints := range intfs {
-			if ints.Oper == "up" {
-				intf = ints
+		for _, m := range intfs {
+			v := reflect.ValueOf(m)
+			if v.Kind() == reflect.Map {
+				for _, key := range v.MapKeys() {
+					k := key.String()
+					l := v.MapIndex(key)
+					val := l.Interface().(string)
+					switch k {
+					case "Duplex":
+						intf.Duplex = val
+					case "MAC":
+						intf.MAC = val
+					case "Oper":
+						if val != "up" {
+							intf = Intf{}
+							continue
+						}
+						intf.Oper = val
+					case "Port":
+						intf.Port = val
+					case "RX-Bytes":
+						intf.RXBytes = val
+					case "RX-Packets":
+						intf.RXPackets = val
+					case "TX-Bytes":
+						intf.TXBytes = val
+					case "TX-Packets":
+						intf.TXPackets = val
+					}
+				}
 				break
 			}
 		}
@@ -90,13 +118,15 @@ func (c *Client) GetApLLDPInfo(apName string) (APLldp, error) {
 		return APLldp{}, fmt.Errorf("%v", err)
 	}
 	defer res.Body.Close()
+	// b, _ := ioutil.ReadAll(res.Body)
+	// fmt.Println(string(b))
 	var lldp APLldp
 
 	// This Block of Code map[string][]Slice
 	// Is Used Because the Property/Field of the returned
 	// JSON Object is Dynamic/Non-Deterministic, so IT needs
 	// To Be PARSED and Stripped OFF
-	var mlldp map[string][]APLldp
+	var mlldp map[string][]interface{}
 	if err = json.NewDecoder(res.Body).Decode(&mlldp); err != nil {
 		return APLldp{}, fmt.Errorf("error parsing resp body: %v", err)
 	}
@@ -105,9 +135,26 @@ func (c *Client) GetApLLDPInfo(apName string) (APLldp, error) {
 		if k == "_data" || k == "_meta" {
 			continue
 		}
-		for _, l := range lldps {
-			lldp = l
-			break
+		for _, m := range lldps {
+			v := reflect.ValueOf(m)
+			if v.Kind() == reflect.Map {
+				for _, key := range v.MapKeys() {
+					k := key.String()
+					l := v.MapIndex(key)
+					val := l.Interface().(string)
+					switch k {
+					case "AP":
+						lldp.APName = val
+					case "Chassis Name/ID":
+						lldp.RemoteHostname = val
+					case "Mgmt. Address":
+						lldp.RemoteIP = val
+					case "Port ID":
+						lldp.RemoteIntf = val
+					}
+				}
+				break
+			}
 		}
 	}
 	return lldp, nil

@@ -66,6 +66,8 @@ func (c *Client) GetApPortStatus(mac string) (Intf, error) {
 						intf.Duplex = val
 					case "MAC":
 						intf.MAC = val
+					case "Speed":
+						intf.Speed = val
 					case "Oper":
 						if val != "up" {
 							intf = Intf{}

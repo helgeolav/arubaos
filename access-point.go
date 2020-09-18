@@ -143,6 +143,9 @@ func (c *Client) GetApLLDPInfo(apName string) (APLldp, error) {
 				for _, key := range v.MapKeys() {
 					k := key.String()
 					l := v.MapIndex(key)
+					if l.Interface() == nil {
+						return lldp, nil
+					}
 					val := l.Interface().(string)
 					switch k {
 					case "AP":

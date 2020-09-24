@@ -71,7 +71,6 @@ func (c *Client) GetApPortStatus(mac string) (Intf, error) {
 					case "Oper":
 						if val != "up" {
 							intf = Intf{}
-							continue
 						}
 						intf.Oper = val
 					case "Port":
@@ -86,7 +85,9 @@ func (c *Client) GetApPortStatus(mac string) (Intf, error) {
 						intf.TXPackets = val
 					}
 				}
-				break
+				if intf.Oper == "up" {
+					break
+				}
 			}
 		}
 	}

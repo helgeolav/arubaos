@@ -39,6 +39,9 @@ func (c *Client) GetApPortStatus(mac string) (Intf, error) {
 		return Intf{}, fmt.Errorf("%v", err)
 	}
 	defer res.Body.Close()
+	// Debug purposes
+	// d, _ := ioutil.ReadAll(res.Body)
+	// fmt.Println(string(d))
 	var intf Intf
 
 	// This Block of Code map[string][]Slice

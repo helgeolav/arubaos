@@ -129,3 +129,41 @@ func (c *Client) updateReq(req *http.Request, qs map[string]string) {
 	q.Add("UIDARUBA", c.uidAruba)
 	req.URL.RawQuery = q.Encode()
 }
+
+// WirelessClient ...
+type WirelessClient struct {
+	ApName     string `json:"AP name"`
+	Auth       string `json:"Auth"`
+	BSSID      string `json:"Bssid"`
+	Controller string `json:"Current switch"`
+	SSID       string `json:"Essid"`
+	MacAddr    string `json:"MAC"`
+	IPAddr     string `json:"IP"`
+	DeviceType string `json:"Type"`
+}
+
+// GetClients ...
+func (c *Client) GetClients() []WirelessClient {
+	var clients []WirelessClient
+	if c.cookie == nil {
+		return clients
+	}
+	req, err := c.genGetReq("/configuration/showcommand")
+	if err != nil {
+		return clients
+	}
+	cmd := "show global-user-table list"
+	qs := map[string]string{"command": cmd}
+	c.updateReq(req, qs)
+	res, err := c.http.Do(req)
+	if err != nil {
+		fmt.Println(err)
+		return clients
+	}
+	defer res.Body.Close()
+	type ClientResp map[string][]WirelessClient
+	var clientResp ClientResp
+	json.NewDecoder(res.Body).Decode(&clientResp)
+	clients = clientResp["Global Users"]
+	return clients
+}

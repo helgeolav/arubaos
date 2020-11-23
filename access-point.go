@@ -305,6 +305,8 @@ func (c *Client) GetAp(apName string) (AP, error) {
 			ap.IPAddr = val.Value
 		case val.Item == "Group":
 			ap.Group = val.Value
+		case val.Item == "Status":
+			ap.Status = val.Value
 		}
 	}
 	for _, val := range result[hwKey] {

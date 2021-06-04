@@ -38,7 +38,7 @@ func New(host, user, pass string, ignoreSSL bool) *Client {
 					InsecureSkipVerify: ignoreSSL,
 				},
 			},
-			Timeout: 30 * time.Second,
+			Timeout: 60 * time.Second,
 		},
 	}
 }
@@ -121,6 +121,7 @@ type AFilter struct {
 
 func (c *Client) updateReq(req *http.Request, qs map[string]string) {
 	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("Accept", "application/json")
 	req.AddCookie(c.cookie)
 	q := req.URL.Query()
 	for key, val := range qs {
@@ -166,4 +167,12 @@ func (c *Client) GetClients() []WirelessClient {
 	json.NewDecoder(res.Body).Decode(&clientResp)
 	clients = clientResp["Global Users"]
 	return clients
+}
+
+// ControllerLicense ...
+type ControllerLicense struct {
+	Expires     string    `json:"Expires(Grace period expiry)"`
+	Installed   time.Time `json:"Installed"`
+	Key         string    `json:"Key"`
+	ServiceType string    `json:"Service Type"`
 }

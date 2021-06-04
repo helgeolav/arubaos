@@ -3,7 +3,6 @@ package arubaos
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"strings"
 )
@@ -66,6 +65,9 @@ func (c *Client) ProvAPs(newAPs []ApProv) error {
 
 	endpoint := "/configuration/object"
 	req, err := http.NewRequest("POST", c.BaseURL+endpoint, body)
+	if err != nil {
+		return err
+	}
 
 	// Set Appropriate Values needed for the Req to Succeed
 	c.updateReq(req, map[string]string{})
@@ -74,8 +76,6 @@ func (c *Client) ProvAPs(newAPs []ApProv) error {
 	if err != nil {
 		return fmt.Errorf("%v", err)
 	}
-	result, err := ioutil.ReadAll(res.Body)
-	fmt.Println(string(result))
 	defer res.Body.Close()
 	return nil
 }

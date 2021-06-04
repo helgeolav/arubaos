@@ -148,7 +148,7 @@ func (c *Client) GetApLLDPInfo(apName string) (APLldp, error) {
 					k := key.String()
 					l := v.MapIndex(key)
 					if l.Interface() == nil {
-						return lldp, nil
+						continue
 					}
 					val := l.Interface().(string)
 					switch k {
@@ -162,7 +162,6 @@ func (c *Client) GetApLLDPInfo(apName string) (APLldp, error) {
 						lldp.RemoteIntf = val
 					}
 				}
-				break
 			}
 		}
 	}

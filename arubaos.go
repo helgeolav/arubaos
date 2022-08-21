@@ -106,12 +106,9 @@ func (c *Client) Logout() (ArubaAuthResp, error) {
 	return authObj, nil
 }
 
+// genGetReq returns a new http.Request object for a GET with the BaseURL as prefix to url
 func (c *Client) genGetReq(url string) (*http.Request, error) {
-	req, err := http.NewRequest(http.MethodGet, c.BaseURL+url, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %v", err)
-	}
-	return req, nil
+	return http.NewRequest(http.MethodGet, c.BaseURL+url, nil)
 }
 
 // AFilter URI Params for Get Reqs
@@ -120,6 +117,7 @@ type AFilter struct {
 	CfgPath string
 }
 
+// updateReq enhances a http.Request object with query values needed to query ArubaOS
 func (c *Client) updateReq(req *http.Request, qs map[string]string) {
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Accept", "application/json")

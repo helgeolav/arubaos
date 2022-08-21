@@ -1,11 +1,14 @@
 # go-arubaos
 
+This is a [fork](https://github.com/ApogeeNetworking/arubaos) from ApogeeNetworking, but with no intention from my
+side to send anything back as the original project seems dead.
+
 ## Installation
 
 Install via **go get**:
 
 ```shell
-go get -u github.com/ApogeeNetworking/arubaos
+go get -u github.com/helgeolav/arubaos
 ```
 
 ## Usage
@@ -19,7 +22,7 @@ import (
     "fmt"
     "log"
     
-    "github.com/ApogeeNetworking/arubaos"
+    "github.com/helgeolav/arubaos"
 )
 
 func main() {

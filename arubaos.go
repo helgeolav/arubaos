@@ -3,6 +3,7 @@ package arubaos
 import (
 	"crypto/tls"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -58,7 +59,7 @@ func (c *Client) Login() error {
 	data.Set("username", c.Username)
 	data.Set("password", c.Password)
 	body := strings.NewReader(data.Encode())
-	req, err := http.NewRequest("POST", c.BaseURL+"/api/login", body)
+	req, err := http.NewRequest(http.MethodPost, c.BaseURL+"/api/login", body)
 	if err != nil {
 		return fmt.Errorf("failed to create a new request: %v", err)
 	}
@@ -106,7 +107,7 @@ func (c *Client) Logout() (ArubaAuthResp, error) {
 }
 
 func (c *Client) genGetReq(url string) (*http.Request, error) {
-	req, err := http.NewRequest("GET", c.BaseURL+url, nil)
+	req, err := http.NewRequest(http.MethodGet, c.BaseURL+url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %v", err)
 	}
@@ -144,29 +145,28 @@ type WirelessClient struct {
 }
 
 // GetClients ...
-func (c *Client) GetClients() []WirelessClient {
+func (c *Client) GetClients() ([]WirelessClient, error) {
 	var clients []WirelessClient
 	if c.cookie == nil {
-		return clients
+		return clients, errors.New("missing cookie")
 	}
 	req, err := c.genGetReq("/configuration/showcommand")
 	if err != nil {
-		return clients
+		return clients, err
 	}
 	cmd := "show global-user-table list"
 	qs := map[string]string{"command": cmd}
 	c.updateReq(req, qs)
 	res, err := c.http.Do(req)
 	if err != nil {
-		fmt.Println(err)
-		return clients
+		return clients, err
 	}
 	defer res.Body.Close()
 	type ClientResp map[string][]WirelessClient
 	var clientResp ClientResp
 	json.NewDecoder(res.Body).Decode(&clientResp)
 	clients = clientResp["Global Users"]
-	return clients
+	return clients, nil
 }
 
 // ControllerLicense ...

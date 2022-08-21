@@ -64,7 +64,7 @@ func (c *Client) ProvAPs(newAPs []ApProv) error {
 	body := strings.NewReader(string(jdata))
 
 	endpoint := "/configuration/object"
-	req, err := http.NewRequest("POST", c.BaseURL+endpoint, body)
+	req, err := http.NewRequest(http.MethodPost, c.BaseURL+endpoint, body)
 	if err != nil {
 		return err
 	}
@@ -73,9 +73,9 @@ func (c *Client) ProvAPs(newAPs []ApProv) error {
 	c.updateReq(req, map[string]string{})
 
 	res, err := c.http.Do(req)
+	_ = res.Body.Close()
 	if err != nil {
 		return fmt.Errorf("%v", err)
 	}
-	defer res.Body.Close()
 	return nil
 }

@@ -3,7 +3,7 @@ package arubaos
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 )
@@ -63,7 +63,7 @@ func (c *Client) CpSecAdd(aps []WdbCpSec) error {
 	body := strings.NewReader(string(j))
 
 	endpoint := "/configuration/object"
-	req, err := http.NewRequest("POST", c.BaseURL+endpoint, body)
+	req, err := http.NewRequest(http.MethodPost, c.BaseURL+endpoint, body)
 
 	c.updateReq(req, map[string]string{})
 	res, err := c.http.Do(req)
@@ -71,9 +71,9 @@ func (c *Client) CpSecAdd(aps []WdbCpSec) error {
 		return fmt.Errorf("%v", err)
 	}
 	defer res.Body.Close()
-	result, err := ioutil.ReadAll(res.Body)
-	fmt.Println(string(result))
-	return nil
+	result, err := io.ReadAll(res.Body)
+	fmt.Println(string(result)) // TODO: why print the result, do we need it?
+	return err
 }
 
 // CpSecModify update APs in Whitelist
@@ -100,7 +100,7 @@ func (c *Client) CpSecModify(aps []WdbCpSec) error {
 	j, _ := json.Marshal(apModWhitelist)
 	body := strings.NewReader(string(j))
 	endpoint := "/configuration/object"
-	req, err := http.NewRequest("POST", c.BaseURL+endpoint, body)
+	req, err := http.NewRequest(http.MethodPost, c.BaseURL+endpoint, body)
 	if err != nil {
 		return fmt.Errorf("failed to create request: %v", err)
 	}
@@ -110,9 +110,9 @@ func (c *Client) CpSecModify(aps []WdbCpSec) error {
 		return fmt.Errorf("request failed: %v", err)
 	}
 	defer res.Body.Close()
-	result, err := ioutil.ReadAll(res.Body)
-	fmt.Println(string(result))
-	return nil
+	result, err := io.ReadAll(res.Body)
+	fmt.Println(string(result)) // TODO: why print this result?
+	return err
 }
 
 /*
@@ -144,7 +144,7 @@ func (c *Client) CpSecDel(aps []WdbCpSec) error {
 	body := strings.NewReader(string(j))
 
 	endpoint := "/configuration/object"
-	req, err := http.NewRequest("POST", c.BaseURL+endpoint, body)
+	req, err := http.NewRequest(http.MethodPost, c.BaseURL+endpoint, body)
 
 	c.updateReq(req, map[string]string{})
 	res, err := c.http.Do(req)
@@ -152,9 +152,9 @@ func (c *Client) CpSecDel(aps []WdbCpSec) error {
 		return fmt.Errorf("%v", err)
 	}
 	defer res.Body.Close()
-	result, err := ioutil.ReadAll(res.Body)
-	fmt.Println(string(result))
-	return nil
+	result, err := io.ReadAll(res.Body)
+	fmt.Println(string(result)) // TODO: why print out this result, can it be omitted?
+	return err
 }
 
 // ClrGapAp deletes APs from LMS(Controller) Database

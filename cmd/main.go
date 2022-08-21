@@ -5,7 +5,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/ApogeeNetworking/arubaos"
+	"github.com/helgeolav/arubaos"
 	"github.com/subosito/gotenv"
 )
 
